@@ -3,7 +3,6 @@ defmodule Electrofrenetic.Game.State do
 
   defmodule Player do
     defstruct [:name, :ship_uuid]
-
   end
 
   defmodule Object do
@@ -13,7 +12,6 @@ defmodule Electrofrenetic.Game.State do
 
     defstruct [:uuid, :name, :position, :direction, :velocity]
   end
-
 
   def new do
     %__MODULE__{
@@ -29,6 +27,7 @@ defmodule Electrofrenetic.Game.State do
       position: {0, 0.2},
       velocity: {0, 0.1}
     }
+
     player = %Player{name: player_name, ship_uuid: ship.uuid}
 
     state =
@@ -46,7 +45,11 @@ defmodule Electrofrenetic.Game.State do
   def tick(state) do
     state
     |> Map.update!(:objects, fn objects ->
-      Map.new(objects, fn {uuid, %{position: {position_x, position_y}, velocity: {velocity_x, velocity_y}} = object} ->
+      Map.new(objects, fn {uuid,
+                           %{
+                             position: {position_x, position_y},
+                             velocity: {velocity_x, velocity_y}
+                           } = object} ->
         new_position = {position_x + velocity_x, position_y + velocity_y}
 
         {uuid, Map.put(object, :position, new_position)}
@@ -86,4 +89,3 @@ defmodule Electrofrenetic.Game.State do
     Map.keys(state.players)
   end
 end
-

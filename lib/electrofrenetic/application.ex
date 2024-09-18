@@ -17,7 +17,8 @@ defmodule Electrofrenetic.Application do
       # Start a worker by calling: Electrofrenetic.Worker.start_link(arg)
       # {Electrofrenetic.Worker, arg},
       # Start to serve requests, typically the last entry
-      ElectrofreneticWeb.Endpoint
+      ElectrofreneticWeb.Endpoint,
+      {DynamicSupervisor, name: Electrofrenetic.GameDynamicSupervisor, strategy: :one_for_one}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

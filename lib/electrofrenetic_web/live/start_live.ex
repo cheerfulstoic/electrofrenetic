@@ -7,7 +7,6 @@ defmodule ElectrofreneticWeb.StartLive do
     ~H"""
     <div class="mx-auto max-w-2xl">
       <!-- Start or join a game -->
-
       <h1 class="text-3xl font-bold text-center mb-8">
         Electrofrenetic
       </h1>
@@ -16,8 +15,11 @@ defmodule ElectrofreneticWeb.StartLive do
         <div class="m-4">
           <label class="block text-gray-700 text-sm font-bold mb-2">
             Your Name (required)
-
-            <input name="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" autofocus />
+            <input
+              name="name"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              autofocus
+            />
           </label>
         </div>
 
@@ -25,10 +27,16 @@ defmodule ElectrofreneticWeb.StartLive do
           <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
             Game ID (leave blank to start a new game)
           </label>
-          <input name="game_id" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+          <input
+            name="game_id"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          />
         </div>
 
-        <.button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <.button
+          type="submit"
+          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
           Start or join a game
         </.button>
       </form>
@@ -47,11 +55,13 @@ defmodule ElectrofreneticWeb.StartLive do
 
       name ->
         if String.strip(game_id) == "" do
-          case Game.Server.start() do
+          case Game.start() do
             {:ok, game_id} ->
               {:noreply, push_navigate(socket, to: ~p"/game/#{game_id}/as/#{name}")}
 
-            {:error, _} ->
+            {:error, error} ->
+              IO.inspect(error)
+
               {:noreply, socket}
           end
         else
@@ -60,4 +70,3 @@ defmodule ElectrofreneticWeb.StartLive do
     end
   end
 end
-

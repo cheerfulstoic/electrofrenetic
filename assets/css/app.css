@@ -3,3 +3,16 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
+
+@font-face {
+  font-family: 'DepartureMonoBrian'; /* Give your font a unique name */
+  src: url('/fonts/DepartureMono-1.346/DepartureMono-Regular.woff2') format('woff2'),
+       url('/fonts/DepartureMono-1.346/DepartureMono-Regular.woff') format('woff'); /* Path to font files */
+  font-weight: normal;  /* Specify the font's weight */
+  font-style: normal;  /* Specify the font's style */
+}
+
+html {
+  font-family: 'DepartureMonoBrian', monospace; /* Use the font family you generated */
+}
+

@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "pixi.js": "^8.3.3"
+    "pixi.js": "^8.3.3",
+    "live_json": "file:/Users/brian/github/Miserlou/live_json"
   }
 }

@@ -288,7 +288,8 @@ defmodule ElectrofreneticWeb.CoreComponents do
   attr :multiple, :boolean, default: false, doc: "the multiple flag for select inputs"
 
   attr :rest, :global,
-    include: ~w(accept autocomplete autofocus capture cols disabled form list max maxlength min minlength
+    include:
+      ~w(accept autocomplete autofocus capture cols disabled form list max maxlength min minlength
                 multiple pattern placeholder readonly required rows size step)
 
   def input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do

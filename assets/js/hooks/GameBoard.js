@@ -1,61 +1,241 @@
 import * as PIXI from 'pixi.js';
 
 let GameBoard = {
-  async mounted() {
-    // Create a PixiJS application.
-    console.log({Application: PIXI.Application})
-    const app = new PIXI.Application();
-    console.log({app})
+  blahTest() {
+    // Create a new Graphics object
+    const graphics = new PIXI.Graphics();
 
-    // Intialize the application.
-    await app.init({ background: '#1099bb', resizeTo: window });
+    // Define the gradient parameters
+    const radius = 7000;
+    const centerX = 0;
+    const centerY = 0;
+    // const steps = 500; // Number of steps in the gradient
+    const steps = 100; // Number of steps in the gradient
 
-    // Then adding the application's canvas to the DOM body.
-    this.el.appendChild(app.canvas);
+    // Draw the radial gradient
+    for (let i = steps; i > 0; i--) {
+      // for (let i = 0; i < steps; i++) {
+      const stepRadius = radius * (i / steps);
+      // const alpha = 0.5 * (1 - (i / steps));
+      const alpha = Math.min(
+        ((i / steps) ** -5) / 2000,
+        0.01
+      );
+      // console.log({ stepRadius, alpha })
 
-    // Load the bunny texture.
-    const texture = await PIXI.Assets.load('https://pixijs.com/assets/bunny.png');
+      // graphics.beginFill(0xFFFFFF, alpha); // White with varying alpha
+      graphics.beginFill(0xCCCCCC, alpha); // White with varying alpha
+      graphics.drawCircle(centerX, centerY, stepRadius);
+      graphics.endFill();
+    }
 
-    // Create a new Sprite from an image path.
-    const bunny = new PIXI.Sprite(texture);
+    // Generate a texture from the graphics object
+    const texture = this.app.renderer.generateTexture(graphics);
 
-    // Add to stage.
-    app.stage.addChild(bunny);
+    // Create a sprite using the generated texture
+    const sprite = new PIXI.Sprite(texture);
+
+    // Position the sprite
+    sprite.x = centerX - radius;
+    sprite.y = centerY - radius;
+    sprite.width = radius * 2;
+    sprite.height = radius * 2;
+
+    // Add the sprite to the stage
+    this.app.stage.addChild(sprite);
+
+
+  },
+
+  spriteFromObjectData(data) {
+    let sprite = new PIXI.Sprite(this.textures[data.type]);
 
     // Center the sprite's anchor point.
-    bunny.anchor.set(0.5);
+    sprite.anchor.set(0.5);
 
-    // Move the sprite to the center of the screen.
-    // bunny.x = app.screen.width / 2;
-    // bunny.y = app.screen.height / 2;
+    if (data.position) {
+      sprite.x = data.position.x;
+      sprite.y = data.position.y;
+    }
 
-    bunny.x = 10;
-    bunny.y = 10;
+    sprite.width = data.size;
+    sprite.height = data.size;
 
-    // Add an animation loop callback to the application's ticker.
-    app.ticker.add((time) =>
-    {
-        /**
-         * Just for fun, let's rotate mr rabbit a little.
-         * Time is a Ticker object which holds time related data.
-         * Here we use deltaTime, which is the time elapsed between the frame callbacks
-         * to create frame-independent transformation. Keeping the speed consistent.
-         */
-        bunny.rotation += 0.1 * time.deltaTime;
+    return sprite;
+  },
+
+  detectionSprite(detection) {
+    if (detection.type == "blip") {
+      let circle = new PIXI.Graphics();
+      circle.lineStyle(2, 0x993333);
+      circle.beginFill(0xCC3333);
+
+      circle.drawCircle(detection.position.x, detection.position.y, detection.size / 2);
+
+      circle.endFill();
+
+      return circle;
+    } else {
+      let sprite = new PIXI.Sprite(this.textures[detection.type]);
+
+      // Center the sprite's anchor point.
+      sprite.anchor.set(0.5);
+
+      if (detection.target_aquired) {
+        sprite.tint = 0xFF0000;
+      }
+
+      sprite.x = detection.position.x;
+      sprite.y = detection.position.y;
+
+      sprite.rotation = detection.rotation;
+
+      sprite.width = detection.size;
+      sprite.height = detection.size;
+
+      return sprite;
+    }
+  },
+
+  addObject(uuid, sprite) {
+    this.spritesByUUID[uuid] = sprite;
+
+    this.app.stage.addChild(sprite);
+  },
+
+  async mounted() {
+    // Create a PixiJS application.
+    this.app = new PIXI.Application();
+
+    let [canvasHolder] = this.el.getElementsByClassName('canvas-holder')
+
+    // Intialize the application.
+    await this.app.init({ background: '#000', resizeTo: canvasHolder });
+
+    // Then adding the application's canvas to the DOM body.
+    canvasHolder.appendChild(this.app.canvas);
+
+    let spaceImage = await PIXI.Assets.load('/images/space.png')
+    const tilingSprite = new PIXI.TilingSprite({
+      texture: PIXI.Texture.from('/images/space.png'),
+      // texture: PIXI.Texture.WHITE,
+      width: 100000,
+      height: 100000,
+      anchor: 0.5
     });
 
+    this.app.stage.addChild(tilingSprite);
 
-    // this.el.addEventListener("input", e => {
-    //   let match = this.el.value.replace(/\D/g, "").match(/^(\d{3})(\d{3})(\d{4})$/)
-    //   if(match) {
-    //     this.el.value = `${match[1]}-${match[2]}-${match[3]}`
+    this.blahTest()
+
+    this.textures = {
+      sun: await PIXI.Assets.load('/images/sun.png'),
+      ship: await PIXI.Assets.load('/images/spaceship.png'),
+      missle: await PIXI.Assets.load('/images/missle.png'),
+    };
+
+    this.spritesByUUID = {};
+
+    this.playerSprite = this.spriteFromObjectData({
+      type: "ship",
+      position: { x: 0, y: 0 },
+      size: 20
+    })
+    this.app.stage.addChild(this.playerSprite);
+
+    this.lastDetectionSprites = [];
+
+    // this.handleEvent("add-objects", ({objects_by_uuid}) => {
+    //   // console.log("add-objectS");
+
+    //   for (const [uuid, data] of Object.entries(objects_by_uuid)) {
+    //     this.addObject(uuid, this.spriteFromObjectData(data));
     //   }
     // })
-  }
 
-  async updated() {
-    console.log('updated')
-    // console.log({hi: this.el.data})
+    // this.handleEvent("assign-player-ship", ({uuid}) => {
+    //   this.playerShipUUID = uuid;
+    // })
+
+    // this.handleEvent("add-object", ({uuid, data}) => {
+    //   // console.log("add-object");
+
+    //   this.addObject(uuid, this.spriteFromObjectData(data));
+    // })
+
+    // this.handleEvent("update-positions", ({positions_by_uuid}) => {
+    //   // console.log("update-positions");
+
+    //   for (const [uuid, position] of Object.entries(positions_by_uuid)) {
+    //     let sprite = this.spritesByUUID[uuid];
+    //     if (sprite) {
+    //       sprite.x = position.x;
+    //       sprite.y = position.y;
+
+    //     } else {
+    //       console.error(`Sprite with UUID ${uuid} not found`);
+    //     }
+    //   }
+
+    //   let playerSprite = this.spritesByUUID[this.playerShipUUID];
+    //   let canvas = this.app.canvas;
+    //   if (playerSprite) {
+    //     this.app.stage.pivot.x = playerSprite.x - (canvas.width / 2);
+    //     this.app.stage.pivot.y = playerSprite.y - (canvas.height / 2);
+    //   }
+    // })
+
+    this.handleEvent("update-player", ({ ship }) => {
+      this.playerSprite.x = ship.position.x;
+      this.playerSprite.y = ship.position.y;
+      this.playerSprite.rotation = ship.rotation;
+
+      this.app.stage.pivot.x = this.playerSprite.x - (this.app.canvas.width / 2);
+      this.app.stage.pivot.y = this.playerSprite.y - (this.app.canvas.height / 2);
+    })
+
+    let updateDetections = (detections) => {
+      console.log('detections')
+      console.log(detections)
+
+      this.lastDetectionSprites.forEach((detectionSprite) => {
+        this.app.stage.removeChild(detectionSprite)
+      })
+
+      this.lastDetectionSprites = [];
+
+      detections.forEach((detection) => {
+        let detectionSprite = this.detectionSprite(detection);
+
+        this.app.stage.addChild(detectionSprite);
+
+        this.lastDetectionSprites.push(detectionSprite);
+
+      })
+
+    }
+
+    window.addEventListener('detections_data_initialized', event => updateDetections(event.target.detections_data.detections))
+    window.addEventListener('detections_data_patched', event => updateDetections(event.target.detections_data.detections))
+
+    // this.handleEvent("update-detections", ({detections}) => {
+    //   updateDetections(detections);
+    // })
+
+    //     this.handleEvent("update-rotations", ({rotations_by_uuid}) => {
+    //       // console.log("update-rotations", rotations_by_uuid);
+
+    //       for (const [uuid, rotation] of Object.entries(rotations_by_uuid)) {
+    //         let sprite = this.spritesByUUID[uuid];
+    //         if (sprite) {
+    //           sprite.rotation = rotation;
+    //         } else {
+    //           console.error(`Sprite with UUID ${uuid} not found`);
+    //         }
+    //       }
+    //     })
+
+    this.pushEvent("ready-to-render", {})
   }
 }
 

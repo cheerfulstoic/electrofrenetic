@@ -78,7 +78,23 @@ defmodule ElectrofreneticWeb.Telemetry do
       summary("vm.memory.total", unit: {:byte, :kilobyte}),
       summary("vm.total_run_queue_lengths.total"),
       summary("vm.total_run_queue_lengths.cpu"),
-      summary("vm.total_run_queue_lengths.io")
+      summary("vm.total_run_queue_lengths.io"),
+      summary("electrofrenetic.game.movement_ticker.tick.stop.duration",
+        tags: [],
+        unit: {:native, :millisecond}
+      ),
+      summary("electrofrenetic.game.energy_ticker.tick.stop.duration",
+        tags: [],
+        unit: {:native, :millisecond}
+      ),
+      summary("electrofrenetic.game.detection_ticker.tick.stop.duration",
+        tags: [],
+        unit: {:native, :millisecond}
+      ),
+      summary("electrofrenetic.game.momentum_ticker.tick.stop.duration",
+        tags: [],
+        unit: {:native, :millisecond}
+      )
     ]
   end
 
