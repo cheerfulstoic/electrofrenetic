@@ -4,7 +4,7 @@ defmodule Electrofrenetic.Game.DetectionTicker do
 
   use Electrofrenetic.Game.Ticker,
     telemetry_label: :detection_ticker,
-    delay: 1_000
+    delay: 2_500
 
   def handle_tick(game_id) do
     tick_adjustments(game_id)
@@ -36,6 +36,9 @@ defmodule Electrofrenetic.Game.DetectionTicker do
       |> KeyValueStores.add_data(:energy_output, fn
         uuid, %{object: %{type: :sun}} = ship ->
           1_000_000
+
+        uuid, %{object: %{type: :explosion}} = ship ->
+          1_000
 
         uuid, %{object: %{type: :missle}} = ship ->
           # Should maybe make these fade at some point
@@ -75,8 +78,12 @@ defmodule Electrofrenetic.Game.DetectionTicker do
             value_if(ship.systems.sensors, 5) +
             sun_factor
       end)
-
-    # |> dbg()
+      |> Enum.filter(fn {_, data} ->
+        data[:position] &&
+          data[:energy_output] &&
+          data[:object]
+      end)
+      |> Map.new()
 
     data_by_uuid
     |> Enum.filter(fn {_, %{object: object}} -> object.type == :ship end)
@@ -101,16 +108,33 @@ defmodule Electrofrenetic.Game.DetectionTicker do
           case {distance, target_data.object.type, seeker_sensors_enabled?} do
             {distance, :sun, _} when distance < strong_detection_distance ->
               {target_uuid,
-               %{type: :sun, position: :live, rotation: target_data[:rotation], size: 40}}
+               %{
+                 type: :sun,
+                 position: target_data[:position],
+                 # position: :live,
+                 rotation: target_data[:rotation],
+                 size: 40
+               }}
+
+            {distance, :explosion, _} when distance < strong_detection_distance ->
+              {target_uuid,
+               %{
+                 type: :explosion,
+                 position: target_data[:position],
+                 # position: :live,
+                 rotation: target_data[:rotation],
+                 size: 100
+               }}
 
             {distance, :missle, true} when distance < strong_detection_distance ->
-              # Should maybe make these fade at some point
+              # Should maybe make these fade at a distance at some point
               # For now, just make them visible
 
               {target_uuid,
                %{
                  type: :missle,
-                 position: :live,
+                 position: target_data[:position],
+                 # position: :live,
                  rotation: target_data[:rotation],
                  target_aquired: !!target_data[:target],
                  size: 10
@@ -118,7 +142,13 @@ defmodule Electrofrenetic.Game.DetectionTicker do
 
             {distance, target_type, true} when distance < strong_detection_distance ->
               {target_uuid,
-               %{type: :ship, position: :live, rotation: target_data[:rotation], size: 20}}
+               %{
+                 type: :ship,
+                 position: target_data[:position],
+                 # position: :live,
+                 rotation: target_data[:rotation],
+                 size: 20
+               }}
 
             {distance, target_type, true} when distance < weak_detection_distance ->
               {target_uuid,

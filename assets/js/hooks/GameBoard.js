@@ -1,30 +1,20 @@
 import * as PIXI from 'pixi.js';
 
 let GameBoard = {
-  blahTest() {
+  gradientCircleSprite({ centerX, centerY, radius, steps, color, dividingFactor }) {
     // Create a new Graphics object
     const graphics = new PIXI.Graphics();
 
-    // Define the gradient parameters
-    const radius = 7000;
-    const centerX = 0;
-    const centerY = 0;
-    // const steps = 500; // Number of steps in the gradient
-    const steps = 100; // Number of steps in the gradient
-
     // Draw the radial gradient
     for (let i = steps; i > 0; i--) {
-      // for (let i = 0; i < steps; i++) {
       const stepRadius = radius * (i / steps);
-      // const alpha = 0.5 * (1 - (i / steps));
       const alpha = Math.min(
-        ((i / steps) ** -5) / 2000,
+        ((i / steps) ** -5) / dividingFactor,
         0.01
       );
-      // console.log({ stepRadius, alpha })
 
       // graphics.beginFill(0xFFFFFF, alpha); // White with varying alpha
-      graphics.beginFill(0xCCCCCC, alpha); // White with varying alpha
+      graphics.beginFill(color, alpha); // White with varying alpha
       graphics.drawCircle(centerX, centerY, stepRadius);
       graphics.endFill();
     }
@@ -41,10 +31,7 @@ let GameBoard = {
     sprite.width = radius * 2;
     sprite.height = radius * 2;
 
-    // Add the sprite to the stage
-    this.app.stage.addChild(sprite);
-
-
+    return (sprite)
   },
 
   spriteFromObjectData(data) {
@@ -75,6 +62,25 @@ let GameBoard = {
       circle.endFill();
 
       return circle;
+    } else if (detection.type == "explosion") {
+      return this.gradientCircleSprite({
+        centerX: detection.position.x,
+        centerY: detection.position.y,
+        radius: detection.size / 2,
+        steps: 30,
+        color: 0xFB0006,
+        dividingFactor: 500,
+      })
+
+      // let circle = new PIXI.Graphics();
+      // circle.lineStyle(2, 0x993333);
+      // circle.beginFill(0xF58E51);
+      //
+      // circle.drawCircle(detection.position.x, detection.position.y, detection.size / 2);
+      //
+      // circle.endFill();
+      //
+      // return circle;
     } else {
       let sprite = new PIXI.Sprite(this.textures[detection.type]);
 
@@ -126,7 +132,16 @@ let GameBoard = {
 
     this.app.stage.addChild(tilingSprite);
 
-    this.blahTest()
+    let sunRadianceSprite = this.gradientCircleSprite({
+      centerX: 0,
+      centerY: 0,
+      radius: 3000,
+      steps: 50,
+      // color: 0xCCCCCC,
+      color: 0xFFFEEE,
+      dividingFactor: 2000,
+    })
+    this.app.stage.addChild(sunRadianceSprite);
 
     this.textures = {
       sun: await PIXI.Assets.load('/images/sun.png'),
@@ -190,6 +205,8 @@ let GameBoard = {
       this.playerSprite.y = ship.position.y;
       this.playerSprite.rotation = ship.rotation;
 
+      this.playerSprite.tint = (ship.thrusting ? 0xffcf6a : 0xFFFFFF);
+
       this.app.stage.pivot.x = this.playerSprite.x - (this.app.canvas.width / 2);
       this.app.stage.pivot.y = this.playerSprite.y - (this.app.canvas.height / 2);
     })
@@ -205,12 +222,12 @@ let GameBoard = {
       this.lastDetectionSprites = [];
 
       detections.forEach((detection) => {
+        console.log(detection)
         let detectionSprite = this.detectionSprite(detection);
 
         this.app.stage.addChild(detectionSprite);
 
         this.lastDetectionSprites.push(detectionSprite);
-
       })
 
     }

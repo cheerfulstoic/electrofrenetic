@@ -39,6 +39,10 @@ defmodule Electrofrenetic.Game.EnergyTicker do
         new_percent when new_percent != :error ->
           # dbg(new_percent)
           KeyValueStores.set(game_id, :energy, uuid, new_percent)
+
+        # TODO: FIX
+        :error ->
+          0
       end
     end)
   end

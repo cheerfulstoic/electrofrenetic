@@ -62,7 +62,7 @@ defmodule Electrofrenetic.Game.MissleTicker do
               target_data.position
             )
 
-          rotation_amount = angle / 10
+          rotation_amount = angle / 8.5
 
           new_rotation =
             Geometry.adjust(

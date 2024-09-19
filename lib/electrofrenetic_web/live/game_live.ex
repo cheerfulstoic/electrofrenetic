@@ -144,7 +144,7 @@ defmodule ElectrofreneticWeb.GameLive do
   end
 
   def handle_event("ready-to-render", _, socket) do
-    Process.send_after(self(), :tick, 100)
+    Process.send_after(self(), :tick, 50)
 
     objects_by_uuid = Game.objects_by_uuid(socket.assigns.game_id)
 
@@ -192,7 +192,10 @@ defmodule ElectrofreneticWeb.GameLive do
 
   def handle_event("control-start", %{"key" => " "}, socket) do
     missle_count =
-      Game.fire_missle(socket.assigns.game_id, socket.assigns.current_player.ship_uuid)
+      Game.fire_or_detonate_missle(
+        socket.assigns.game_id,
+        socket.assigns.current_player.ship_uuid
+      )
 
     {:noreply, assign(socket, :missle_count, missle_count)}
   end
@@ -247,7 +250,7 @@ defmodule ElectrofreneticWeb.GameLive do
   end
 
   def handle_info(:tick, socket) do
-    Process.send_after(self(), :tick, 50)
+    Process.send_after(self(), :tick, 60)
 
     {:noreply,
      socket
@@ -296,17 +299,20 @@ defmodule ElectrofreneticWeb.GameLive do
       |> Enum.map(fn {uuid, detection} ->
         detection
         |> Map.update!(:position, fn
-          :live ->
-            positions_by_uuid[uuid]
+          # :live ->
+          #   positions_by_uuid[uuid]
 
           {x, y} ->
             %{x: x, y: y}
         end)
-        |> Map.put(:rotation, rotations_by_uuid[uuid])
+
+        # |> Map.put(:rotation, rotations_by_uuid[uuid])
       end)
 
     player_ship = %{
       position: positions_by_uuid[socket.assigns.current_player.ship_uuid],
+      thrusting:
+        Game.get_thrusting(socket.assigns.game_id, socket.assigns.current_player.ship_uuid),
       rotation: rotations_by_uuid[socket.assigns.current_player.ship_uuid]
     }
 

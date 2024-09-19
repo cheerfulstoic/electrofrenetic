@@ -15,6 +15,8 @@ defmodule Electrofrenetic.Game.KeyValueStores do
     energy: 100.0
   }
 
+  @store_names ~w[object position velocity rotation turn_direction thrusting? energy systems missle_count current_missile target detections expiration]a
+
   def create(game_id, store_name, value) do
     server_name(game_id)
     |> GenServer.call({:create, store_name, value})
@@ -53,6 +55,16 @@ defmodule Electrofrenetic.Game.KeyValueStores do
     end
   end
 
+  def delete_object(game_id, uuid) do
+    @store_names
+    |> Enum.map(fn store_name -> delete(game_id, store_name, uuid) end)
+  end
+
+  def delete(game_id, store_name, uuid) do
+    ets_name(game_id, store_name)
+    |> :ets.delete(uuid)
+  end
+
   def by_uuid(game_id, store_name) do
     ets_name(game_id, store_name)
     |> :ets.tab2list()
@@ -88,7 +100,7 @@ defmodule Electrofrenetic.Game.KeyValueStores do
   @impl true
   def init(game_id) do
     {:ok,
-     ~w[object position velocity rotation turn_direction thrusting? energy systems missle_count target detections]a
+     @store_names
      |> Map.new(fn store_name ->
        {store_name, :ets.new(ets_name(game_id, store_name), [:named_table, :public])}
      end)}

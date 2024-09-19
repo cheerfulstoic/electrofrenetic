@@ -1,4 +1,5 @@
 defmodule Electrofrenetic.Game do
+  alias Electrofrenetic.Game.Geometry
   alias Electrofrenetic.Game.KeyValueStores
   alias Electrofrenetic.Game.PlayerStore
 
@@ -8,6 +9,7 @@ defmodule Electrofrenetic.Game do
   alias Electrofrenetic.Game.EnergyTicker
   alias Electrofrenetic.Game.DetectionTicker
   alias Electrofrenetic.Game.MissleTicker
+  alias Electrofrenetic.Game.ExpirationTicker
 
   use Supervisor
 
@@ -41,7 +43,8 @@ defmodule Electrofrenetic.Game do
       {MovementTicker, game_id},
       {EnergyTicker, game_id},
       {DetectionTicker, game_id},
-      {MissleTicker, game_id}
+      {MissleTicker, game_id},
+      {ExpirationTicker, game_id}
     ]
 
     Supervisor.init(children, strategy: :rest_for_one)
@@ -68,6 +71,8 @@ defmodule Electrofrenetic.Game do
 
   def get_energy(game_id, uuid), do: KeyValueStores.get(game_id, :energy, uuid)
 
+  def get_thrusting(game_id, uuid), do: KeyValueStores.get(game_id, :thrusting?, uuid)
+
   def get_detections(game_id, uuid), do: KeyValueStores.get(game_id, :detections, uuid)
 
   def get_missle_count(game_id, uuid), do: KeyValueStores.get(game_id, :missle_count, uuid)
@@ -78,6 +83,20 @@ defmodule Electrofrenetic.Game do
     KeyValueStores.update(game_id, :systems, uuid, fn systems ->
       Map.update!(systems, system, fn x -> not x end)
     end)
+  end
+
+  def fire_or_detonate_missle(game_id, ship_uuid) do
+    case KeyValueStores.get(game_id, :current_missile, ship_uuid) do
+      nil ->
+        fire_missle(game_id, ship_uuid)
+
+      current_missile ->
+        detonate_missile(game_id, ship_uuid, current_missile)
+
+        # Need to return the current missle missle_count
+        # Should find a better way!
+        KeyValueStores.get(game_id, :missle_count, ship_uuid)
+    end
   end
 
   def fire_missle(game_id, ship_uuid) do
@@ -92,9 +111,17 @@ defmodule Electrofrenetic.Game do
 
       KeyValueStores.create(game_id, :object, %{type: :missle})
       |> tap(fn {uuid, _} ->
+        KeyValueStores.set(game_id, :current_missile, ship_uuid, uuid)
+
         KeyValueStores.set(game_id, :position, uuid, {ship_x_position, ship_y_position})
         KeyValueStores.set(game_id, :rotation, uuid, rotation)
 
+        # expiration =
+        #   DateTime.utc_now()
+        #   |> DateTime.add(30, :second)
+        #
+        # KeyValueStores.set(game_id, :expiration, uuid, expiration)
+        #
         missle_velocity = 0.7
 
         # Velocity is the ships, but with a bit in the direction of the rotation
@@ -114,6 +141,40 @@ defmodule Electrofrenetic.Game do
     else
       missle_count
     end
+  end
+
+  def detonate_missile(game_id, ship_uuid, missile_uuid) do
+    missile_position =
+      KeyValueStores.get(game_id, :position, missile_uuid)
+
+    KeyValueStores.create(game_id, :object, %{type: :explosion})
+    |> tap(fn {uuid, _} ->
+      KeyValueStores.delete_object(game_id, missile_uuid)
+
+      KeyValueStores.set(game_id, :position, uuid, missile_position)
+      KeyValueStores.set(game_id, :velocity, uuid, {0, 0})
+
+      expiration =
+        DateTime.utc_now()
+        |> DateTime.add(6, :second)
+
+      KeyValueStores.set(game_id, :expiration, uuid, expiration)
+
+      KeyValueStores.delete(game_id, :current_missile, ship_uuid)
+
+      %{}
+      |> KeyValueStores.add_data_from(:object, game_id)
+      |> KeyValueStores.add_data_from(:position, game_id)
+      |> Enum.filter(fn {_, %{object: object}} -> object.type == :ship end)
+      |> Enum.each(fn {ship_uuid, ship_data} ->
+        with distance when distance <= 100 <-
+               Geometry.distance(ship_data.position, missile_position) do
+          KeyValueStores.update(game_id, :energy, ship_uuid, fn energy ->
+            energy - (50 - distance / 2)
+          end)
+        end
+      end)
+    end)
   end
 
   def spawn_ship(game_id, name) do
