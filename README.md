@@ -2,7 +2,7 @@
 
 Electrofrenetic is an exploration of how to create multi-player games in Elixir.
 
-You can read about how the game works in the [Game Description](/cheerfulstoic/electrofrenetic/wiki/Game-Description) page
+You can read about how the game works in the [Game Description](https://github.com/cheerfulstoic/electrofrenetic/wiki/Game-Description) page
 
 ## Usage
 
